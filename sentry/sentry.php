@@ -1,4 +1,14 @@
 <?php
+/**
+* Plugin Name: Slickstack Sentry
+* Plugin URI: https://github.com/wusana/slickstack-modules
+* Description: Configuration of sentry.io dsn keys for PHP and JS tracking.
+* License URI: https://www.gnu.org/licenses/gpl-3.0.html
+* License: GPLv3
+* Version: 1.0
+* Author: Wusana
+* Author URI: https://github.com/wusana/slickstack-modules
+**/
 $nse_sentry_options = NSE_Sentry::get_instance()->options;
 
 define( 'WP_SENTRY_PHP_DSN', $nse_sentry_options['dsn_php_key'] );
