@@ -1,20 +1,20 @@
 <?php
 /**
-* Plugin Name: Slickstack Sentry
-* Plugin URI: https://github.com/wusana/slickstack-modules
-* Description: Configuration of sentry.io dsn keys for PHP and JS tracking.
-* License URI: https://www.gnu.org/licenses/gpl-3.0.html
-* License: GPLv3
-* Version: 1.0
-* Author: Wusana
-* Author URI: https://github.com/wusana/slickstack-modules
-**/
+ * Plugin Name: Slickstack Sentry
+ * Plugin URI: https://github.com/wusana/slickstack-modules
+ * Description: Configuration of sentry.io dsn keys for PHP and JS tracking.
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * License: GPLv3
+ * Version: 1.0
+ * Author: Wusana
+ * Author URI: https://github.com/wusana/slickstack-modules
+ **/
 $nse_sentry_options = NSE_Sentry::get_instance()->options;
 
 define( 'WP_SENTRY_PHP_DSN', $nse_sentry_options['dsn_php_key'] );
 define( 'WP_SENTRY_SEND_DEFAULT_PII', true );
 define( 'WP_SENTRY_BROWSER_DSN', $nse_sentry_options['dsn_browser_key'] );
-define( 'WP_SENTRY_BROWSER_TRACES_SAMPLE_RATE', 0.3 );
+define( 'WP_SENTRY_BROWSER_TRACES_SAMPLE_RATE', floatval( $nse_sentry_options['browser_traces_sample_rate'] ) );
 
 if ( file_exists( ABSPATH . 'wp-content/plugins/wp-sentry-integration/wp-sentry.php' ) ) {
 	require_once ABSPATH . 'wp-content/plugins/wp-sentry-integration/wp-sentry.php';
@@ -35,29 +35,33 @@ function sentry_error_logging( $code, $message, $data, $error ) {
 }
 
 
-add_action(
-	'wp_enqueue_scripts',
-	function () {
-		wp_add_inline_script(
-			'wp-sentry-browser',
-			'function wp_sentry_hook(options) {
-		options.integrations
-        console.log({options})
-    }',
-			'before'
-		);
-	}
-);
+// add_action(
+// 'wp_enqueue_scripts',
+// function () {
+// wp_add_inline_script(
+// 'wp-sentry-browser',
+// 'function wp_sentry_hook(options) {
+// options.integrations
+// console.log({options})
+// }',
+// 'before'
+// );
+// }
+// );
 
-// add_filter('wp_sentry_public_options', function($options){
-// $options['integrations'] = [
-// 'breadcrumbs' => [
-// 'fetch' => true,
-// 'xhr' => true
-// ]];
-// $options['maxBreadcrumbs'] = 50;
+// add_filter(
+// 'wp_sentry_public_options',
+// function( $options ) {
+// $options['integrations'] = array(
+// 'BrowserTracing' => array(
+// 'tracingOrigins' => array("localhost", "streetmap.test/wp-json","/^\//"),
+// ),
+// );
 // return $options;
-// }, 10, 1);
+// },
+// 10,
+// 1
+// );
 
 // Setting For Sentry
 
@@ -80,8 +84,9 @@ final class NSE_Sentry {
 		$this->options = wp_parse_args(
 			get_option( 'nse_sentry_options', array() ),
 			array(
-				'dsn_php_key'     => '',
-				'dsn_browser_key' => '',
+				'dsn_php_key'                => '',
+				'dsn_browser_key'            => '',
+				'browser_traces_sample_rate' => 0.0,
 			)
 		);
 	}
@@ -99,7 +104,7 @@ final class NSE_Sentry {
 		add_settings_field(
 			'dsn_php_key',
 			__( 'DSN PHP Key:', 'nse_sentry' ),
-			array( $this, 'dsn_php_html' ),
+			array( $this, 'input_setting_html' ),
 			'nse_sentry',
 			'nse_sentry_key_section',
 			array(
@@ -111,11 +116,23 @@ final class NSE_Sentry {
 		add_settings_field(
 			'dsn_browser_key',
 			__( 'DSN Browser Key:', 'nse_sentry' ),
-			array( $this, 'dsn_php_html' ),
+			array( $this, 'input_setting_html' ),
 			'nse_sentry',
 			'nse_sentry_key_section',
 			array(
 				'label_for' => 'dsn_browser_key',
+				'class'     => 'regular-text',
+			)
+		);
+
+		add_settings_field(
+			'browser_traces_sample_rate',
+			__( 'Browser traces sample rate:', 'nse_sentry' ),
+			array( $this, 'input_setting_html' ),
+			'nse_sentry',
+			'nse_sentry_key_section',
+			array(
+				'label_for' => 'browser_traces_sample_rate',
 				'class'     => 'regular-text',
 			)
 		);
@@ -162,7 +179,7 @@ final class NSE_Sentry {
 		<?php
 	}
 
-	public function dsn_php_html( $args ) {
+	public function input_setting_html( $args ) {
 		?>
 		<input 
 			id="<?php esc_attr_e( $args['label_for'] ); ?>"
